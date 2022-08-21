@@ -20,82 +20,79 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.requestSpecification;
 import static org.hamcrest.Matchers.equalTo;
 
 public class CreateCourierAPITest {
-
-    @Before
-    public void setUp() {
-        RestAssured.baseURI= "http://qa-scooter.praktikum-services.ru/";
-    }
-
-    @After
-    public void clearUserData() {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        HttpPost httppost = new HttpPost("http://qa-scooter.praktikum-services.ru/api/v1/courier/login");
-
-        // Request parameters and other properties.
-        List<NameValuePair> params = new ArrayList<NameValuePair>(2);
-        params.add(new BasicNameValuePair("login", "okhomiakova_"));
-        params.add(new BasicNameValuePair("password", "12345"));
-        try {
-            httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
-        //Execute and get the response.
-        CloseableHttpResponse response = null;
-        try {
-            response = httpclient.execute(httppost);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        HttpEntity entity = response.getEntity();
-
-        String responseString = null;
-        try {
-            responseString = EntityUtils.toString(entity, "UTF-8");
-        } catch (IOException e) {
-            System.out.println("[clearUserData]: " + "exception");
-            e.printStackTrace();
-        }
-        System.out.println("[clearUserData]: " + responseString);
-
-        if (responseString.equals("{\"code\":404,\"message\":\"Учетная запись не найдена\"}")) {
-            return;
-        }
-
-        Gson gson = new Gson();
-        LoginResponse loginResponse = gson.fromJson(responseString, LoginResponse.class);
-
-        System.out.println("[clearUserData]: " + loginResponse.getId());
-
-        HttpDelete httpdelete = new HttpDelete("http://qa-scooter.praktikum-services.ru/api/v1/courier/" + loginResponse.getId());
-
-        try {
-            response = httpclient.execute(httpdelete);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        entity = response.getEntity();
-
-        responseString = null;
-        try {
-            responseString = EntityUtils.toString(entity, "UTF-8");
-        } catch (IOException e) {
-            System.out.println("exception");
-            e.printStackTrace();
-        }
-        System.out.println("[clearUserData]: " + responseString);
-    }
+//
+//    @After
+//    public void clearUserData() {
+//        CloseableHttpClient httpclient = HttpClients.createDefault();
+//        HttpPost httppost = new HttpPost("http://qa-scooter.praktikum-services.ru/api/v1/courier/login");
+//
+//        // Request parameters and other properties.
+//        List<NameValuePair> params = new ArrayList<NameValuePair>(2);
+//        params.add(new BasicNameValuePair("login", "okhomiakova_"));
+//        params.add(new BasicNameValuePair("password", "12345"));
+//        try {
+//            httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
+//
+//        //Execute and get the response.
+//        CloseableHttpResponse response = null;
+//        try {
+//            response = httpclient.execute(httppost);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        HttpEntity entity = response.getEntity();
+//
+//        String responseString = null;
+//        try {
+//            responseString = EntityUtils.toString(entity, "UTF-8");
+//        } catch (IOException e) {
+//            System.out.println("[clearUserData]: " + "exception");
+//            e.printStackTrace();
+//        }
+//        System.out.println("[clearUserData]: " + responseString);
+//
+//        if (responseString.equals("{\"code\":404,\"message\":\"Учетная запись не найдена\"}")) {
+//            return;
+//        }
+//
+//        Gson gson = new Gson();
+//        LoginResponse loginResponse = gson.fromJson(responseString, LoginResponse.class);
+//
+//        System.out.println("[clearUserData]: " + loginResponse.getId());
+//
+//        HttpDelete httpdelete = new HttpDelete("http://qa-scooter.praktikum-services.ru/api/v1/courier/" + loginResponse.getId());
+//
+//        try {
+//            response = httpclient.execute(httpdelete);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        entity = response.getEntity();
+//
+//        responseString = null;
+//        try {
+//            responseString = EntityUtils.toString(entity, "UTF-8");
+//        } catch (IOException e) {
+//            System.out.println("exception");
+//            e.printStackTrace();
+//        }
+//        System.out.println("[clearUserData]: " + responseString);
+//    }
 
     @Test
     @DisplayName("Create new courier")
     public void createNewCourierWithCorrectAndSufficientData() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"okhomiakova_\",\"password\": \"12345\",\"firstName\": \"olya\"}")
                 .post("/api/v1/courier");
@@ -106,6 +103,7 @@ public class CreateCourierAPITest {
     @DisplayName("Create a courier with duplicate data")
     public void createNewCourierWithDuplicateData() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"ninja\",\"password\": \"1234\",\"firstName\": \"saske\"}")
                 .post("/api/v1/courier");
@@ -116,6 +114,7 @@ public class CreateCourierAPITest {
     @DisplayName("Create new courier without login")
     public void createNewCourierWithoutLogin() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"\", \"password\": \"12345\",\"firstName\": \"olya\"}")
                 .post("/api/v1/courier");
@@ -126,6 +125,7 @@ public class CreateCourierAPITest {
     @DisplayName("Create new courier without password")
     public void createNewCourierWithoutPassword() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"okhomiakova\", \"password\": \"\", \"firstName\": \"olya\"}")
                 .post("/api/v1/courier");
@@ -136,6 +136,7 @@ public class CreateCourierAPITest {
     @DisplayName("Create new courier without firstName")
     public void createNewCourierWithoutFirstName() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"okhomiakova\", \"password\": \"\", \"firstName\": \"\"}")
                 .post("/api/v1/courier");
@@ -146,6 +147,7 @@ public class CreateCourierAPITest {
     @DisplayName("Create new courier with login which already exists")
     public void createNewCourierWithTakenLogin() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"ninja\",\"password\": \"12345\",\"firstName\": \"olya\"}")
                 .post("/api/v1/courier");

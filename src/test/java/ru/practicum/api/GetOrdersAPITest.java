@@ -8,15 +8,12 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class GetOrdersAPITest {
-    @Before
-    public void setUp() {
-        RestAssured.baseURI= "http://qa-scooter.praktikum-services.ru/";
-    }
 
     @Test
     @DisplayName("Get all orders")
     public void getAllOrders() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("")
                 .get("/api/v1/orders");

@@ -56,10 +56,6 @@ public class CreateOrderAPITest {
         };
     }
 
-    @Before
-    public void setUp() {
-        RestAssured.baseURI= "http://qa-scooter.praktikum-services.ru/";
-    }
 
     @After
     public void cancelOrder() {
@@ -93,6 +89,7 @@ public class CreateOrderAPITest {
     @DisplayName("Create orders with different scooter color options")
     public void createOrderParameterizedTest() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("")
                 .post("/api/v1/orders");

@@ -22,14 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.requestSpecification;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 
 public class LoginCourierAPITest {
-    @Before
-    public void setUp() {
-        RestAssured.baseURI= "http://qa-scooter.praktikum-services.ru/";
-    }
 
     @Before
     public void createUser() {
@@ -134,6 +131,7 @@ public class LoginCourierAPITest {
     @DisplayName("Log in successfully with existing courier")
     public void logInWithExistingCourier() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"okhomiakova_\",\"password\": \"12345\"}")
                 .post("/api/v1/courier/login");
@@ -144,6 +142,7 @@ public class LoginCourierAPITest {
     @DisplayName("Log in without login")
     public void logInWithoutLogin() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"\", \"password\": \"12345\"}")
                 .post("/api/v1/courier/login");
@@ -154,6 +153,7 @@ public class LoginCourierAPITest {
     @DisplayName("Log in without password")
     public void logInWithoutPassword() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"okhomiakova_\", \"password\": \"\"}")
                 .post("/api/v1/courier/login");
@@ -164,6 +164,7 @@ public class LoginCourierAPITest {
     @DisplayName("Log in with incorrect login")
     public void logInWithIncorrectLogin() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"okokhomiakova_\",\"password\": \"12345\"}")
                 .post("/api/v1/courier/login");
@@ -174,6 +175,7 @@ public class LoginCourierAPITest {
     @DisplayName("Log in with incorrect password")
     public void logInWithIncorrectPassword() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"okhomiakova_\",\"password\": \"54321\"}")
                 .post("/api/v1/courier/login");
@@ -184,6 +186,7 @@ public class LoginCourierAPITest {
     @DisplayName("Log in with non-existent user")
     public void logInWithNonExistentUser() {
         Response response = given()
+                .spec(SetUp.requestSpec())
                 .header("Content-type", "application/json")
                 .body("{\"login\": \"notokhomiakova_\",\"password\": \"54321\"}")
                 .post("/api/v1/courier/login");
