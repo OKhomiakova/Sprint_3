@@ -1,3 +1,5 @@
+package ru.practicum.api;
+
 import io.restassured.specification.RequestSpecification;
 import static io.restassured.RestAssured.given;
 

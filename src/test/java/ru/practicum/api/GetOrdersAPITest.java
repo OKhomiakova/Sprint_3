@@ -1,22 +1,19 @@
-import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
-import io.restassured.response.Response;
-import org.junit.Before;
-import org.junit.Test;
+package ru.practicum.api;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.notNullValue;
+import io.qameta.allure.junit4.DisplayName;
+import io.restassured.response.Response;
+
+import org.junit.Test;
+import ru.practicum.api.steps.OrderTestSteps;
+
+import static org.hamcrest.Matchers.*;
 
 public class GetOrdersAPITest {
 
     @Test
     @DisplayName("Get all orders")
     public void getAllOrders() {
-        Response response = given()
-                .spec(SetUp.requestSpec())
-                .header("Content-type", "application/json")
-                .body("")
-                .get("/api/v1/orders");
-        response.then().assertThat().body("orders", notNullValue()).and().statusCode(200);
+        Response response = OrderTestSteps.getAllOrders();
+        response.then().assertThat().body("orders", hasSize(greaterThan(0))).and().statusCode(200);
     }
 }

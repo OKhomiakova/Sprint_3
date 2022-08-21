@@ -1,195 +1,166 @@
-import com.google.gson.Gson;
-import io.restassured.RestAssured;
+package ru.practicum.api;
+
+import POJO.CourierForSignIn;
+import POJO.CourierForSignUp;
 import io.restassured.response.Response;
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import io.qameta.allure.junit4.DisplayName;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static io.restassured.RestAssured.given;
-import static io.restassured.RestAssured.requestSpecification;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import ru.practicum.api.steps.CourierTestSteps;
 
 public class LoginCourierAPITest {
 
+    private CourierForSignUp courier;
+
     @Before
-    public void createUser() {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        HttpPost httppost = new HttpPost("http://qa-scooter.praktikum-services.ru/api/v1/courier");
+    public void createCourier() {
+        String login = RandomStringUtils.randomAlphanumeric(5);
+        String password = RandomStringUtils.randomAlphanumeric(5);
+        String firstName = RandomStringUtils.randomAlphanumeric(5);
 
-        // Request parameters and other properties.
-        List<NameValuePair> params = new ArrayList<NameValuePair>(2);
-        params.add(new BasicNameValuePair("login", "okhomiakova_"));
-        params.add(new BasicNameValuePair("password", "12345"));
-        params.add(new BasicNameValuePair("firstName", "olya"));
-        try {
-            httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
-        //Execute and get the response.
-        CloseableHttpResponse response = null;
-        try {
-            response = httpclient.execute(httppost);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        HttpEntity entity = response.getEntity();
-
-        String responseString = null;
-        try {
-            responseString = EntityUtils.toString(entity, "UTF-8");
-        } catch (IOException e) {
-            System.out.println("[clearUserData]: " + "exception");
-            e.printStackTrace();
-        }
-        System.out.println("[clearUserData]: " + responseString);
-    }
-
-    @After
-    public void clearUserData() {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        HttpPost httppost = new HttpPost("http://qa-scooter.praktikum-services.ru/api/v1/courier/login");
-
-        // Request parameters and other properties.
-        List<NameValuePair> params = new ArrayList<NameValuePair>(2);
-        params.add(new BasicNameValuePair("login", "okhomiakova_"));
-        params.add(new BasicNameValuePair("password", "12345"));
-        try {
-            httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
-        //Execute and get the response.
-        CloseableHttpResponse response = null;
-        try {
-            response = httpclient.execute(httppost);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        HttpEntity entity = response.getEntity();
-
-        String responseString = null;
-        try {
-            responseString = EntityUtils.toString(entity, "UTF-8");
-        } catch (IOException e) {
-            System.out.println("[clearUserData]: " + "exception");
-            e.printStackTrace();
-        }
-        System.out.println("[clearUserData]: " + responseString);
-
-        if (responseString.equals("{\"code\":404,\"message\":\"Учетная запись не найдена\"}")) {
-            return;
-        }
-
-        Gson gson = new Gson();
-        LoginResponse loginResponse = gson.fromJson(responseString, LoginResponse.class);
-
-        System.out.println("[clearUserData]: " + loginResponse.getId());
-
-        HttpDelete httpdelete = new HttpDelete("http://qa-scooter.praktikum-services.ru/api/v1/courier/" + loginResponse.getId());
-
-        try {
-            response = httpclient.execute(httpdelete);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        entity = response.getEntity();
-
-        responseString = null;
-        try {
-            responseString = EntityUtils.toString(entity, "UTF-8");
-        } catch (IOException e) {
-            System.out.println("exception");
-            e.printStackTrace();
-        }
-        System.out.println("[clearUserData]: " + responseString);
+        this.courier = new CourierForSignUp(login, password, firstName);
     }
 
     @Test
-    @DisplayName("Log in successfully with existing courier")
+    @DisplayName("Логин с корректным логином и паролем")
     public void logInWithExistingCourier() {
-        Response response = given()
-                .spec(SetUp.requestSpec())
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"okhomiakova_\",\"password\": \"12345\"}")
-                .post("/api/v1/courier/login");
-        response.then().assertThat().body("id", not(0)).and().statusCode(200);
+        Response createResponse = CourierTestSteps.createNewCourier(courier);
+        // логинимся за этого пользователя
+        CourierForSignIn courierForSignIn = new CourierForSignIn(this.courier.getLogin(), this.courier.getPassword());
+        Response logInResponse = CourierTestSteps.loginCourier(courierForSignIn);
+        // проверяем, что залогинился успешно
+        CourierTestSteps.compareSuccessLoginResponseStringAndCode(logInResponse, 200);
+        // получаем id курьера
+        String courierId = CourierTestSteps.getCourierId(logInResponse);
+        // удаляем курьера по id
+        Response deleteResponse = CourierTestSteps.deleteCourier(courierId);
+        CourierTestSteps.compareSuccessResponseStringAndCode(deleteResponse, "ok", 200);
     }
 
     @Test
-    @DisplayName("Log in without login")
+    @DisplayName("Логин с пустым логином")
+    public void logInWithEmptyLogin() {
+        // создаем курьера
+        CourierTestSteps.createNewCourier(courier);
+        // без пароля логинимся за этого пользователя
+        CourierForSignIn courierForSignIn = new CourierForSignIn("", this.courier.getLogin());
+        Response logInResponse = CourierTestSteps.loginCourier(courierForSignIn);
+        // проверяем, что залогинился неуспешно
+        CourierTestSteps.compareErrorResponseStringAndCode(logInResponse, 400, "Недостаточно данных для входа");
+        CourierForSignIn courierForSignIn2 = new CourierForSignIn(this.courier.getLogin(), this.courier.getPassword());
+        Response logInResponse2 = CourierTestSteps.loginCourier(courierForSignIn2);
+        // получаем id курьера
+        String courierId = CourierTestSteps.getCourierId(logInResponse2);
+        // удаляем курьера по id
+        Response deleteResponse = CourierTestSteps.deleteCourier(courierId);
+        CourierTestSteps.compareSuccessResponseStringAndCode(deleteResponse, "ok", 200);
+    }
+
+    @Test
+    @DisplayName("Логин без ввода логина")
     public void logInWithoutLogin() {
-        Response response = given()
-                .spec(SetUp.requestSpec())
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"\", \"password\": \"12345\"}")
-                .post("/api/v1/courier/login");
-        response.then().assertThat().body("message", equalTo("Недостаточно данных для входа")).and().statusCode(400);
+        // создаем курьера
+        CourierTestSteps.createNewCourier(courier);
+        // без пароля логинимся за этого пользователя
+        CourierForSignIn courierForSignIn = new CourierForSignIn(null, this.courier.getLogin());
+        Response logInResponse = CourierTestSteps.loginCourier(courierForSignIn);
+        // проверяем, что залогинился неуспешно
+        CourierTestSteps.compareErrorResponseStringAndCode(logInResponse, 400, "Недостаточно данных для входа");
+        CourierForSignIn courierForSignIn2 = new CourierForSignIn(this.courier.getLogin(), this.courier.getPassword());
+        Response logInResponse2 = CourierTestSteps.loginCourier(courierForSignIn2);
+        // получаем id курьера
+        String courierId = CourierTestSteps.getCourierId(logInResponse2);
+        // удаляем курьера по id
+        Response deleteResponse = CourierTestSteps.deleteCourier(courierId);
+        CourierTestSteps.compareSuccessResponseStringAndCode(deleteResponse, "ok", 200);
     }
 
     @Test
-    @DisplayName("Log in without password")
+    @DisplayName("Логин c пустым паролем")
+    public void logInWithEmptyPassword() {
+        // создаем курьера
+        CourierTestSteps.createNewCourier(courier);
+        // без пароля логинимся за этого пользователя
+        CourierForSignIn courierForSignIn = new CourierForSignIn(this.courier.getLogin(), "");
+        Response logInResponse = CourierTestSteps.loginCourier(courierForSignIn);
+        // проверяем, что залогинился неуспешно
+        CourierTestSteps.compareErrorResponseStringAndCode(logInResponse, 400, "Недостаточно данных для входа");
+        CourierForSignIn courierForSignIn2 = new CourierForSignIn(this.courier.getLogin(), this.courier.getPassword());
+        Response logInResponse2 = CourierTestSteps.loginCourier(courierForSignIn2);
+        // получаем id курьера
+        String courierId = CourierTestSteps.getCourierId(logInResponse2);
+        // удаляем курьера по id
+        Response deleteResponse = CourierTestSteps.deleteCourier(courierId);
+        CourierTestSteps.compareSuccessResponseStringAndCode(deleteResponse, "ok", 200);
+    }
+
+    // Этот тест падает, поскольку сервер зависает
+    @Test
+    @DisplayName("Логин без ввода пароля")
     public void logInWithoutPassword() {
-        Response response = given()
-                .spec(SetUp.requestSpec())
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"okhomiakova_\", \"password\": \"\"}")
-                .post("/api/v1/courier/login");
-        response.then().assertThat().body("message", equalTo("Недостаточно данных для входа")).and().statusCode(400);
+        // создаем курьера
+        CourierTestSteps.createNewCourier(courier);
+        // без пароля логинимся за этого пользователя
+        CourierForSignIn courierForSignIn = new CourierForSignIn(this.courier.getLogin(), null);
+        Response logInResponse = CourierTestSteps.loginCourier(courierForSignIn);
+        // проверяем, что залогинился неуспешно
+        CourierTestSteps.compareErrorResponseStringAndCode(logInResponse, 400, "Недостаточно данных для входа");
+        CourierForSignIn courierForSignIn2 = new CourierForSignIn(this.courier.getLogin(), this.courier.getPassword());
+        Response logInResponse2 = CourierTestSteps.loginCourier(courierForSignIn2);
+        // получаем id курьера
+        String courierId = CourierTestSteps.getCourierId(logInResponse2);
+        // удаляем курьера по id
+        Response deleteResponse = CourierTestSteps.deleteCourier(courierId);
+        CourierTestSteps.compareSuccessResponseStringAndCode(deleteResponse, "ok", 200);
     }
 
     @Test
-    @DisplayName("Log in with incorrect login")
-    public void logInWithIncorrectLogin() {
-        Response response = given()
-                .spec(SetUp.requestSpec())
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"okokhomiakova_\",\"password\": \"12345\"}")
-                .post("/api/v1/courier/login");
-        response.then().assertThat().body("message", equalTo("Учетная запись не найдена")).and().statusCode(404);
+    @DisplayName("Логин с неправильным паролем")
+    public void logInWithIncorrectPassword() {
+        // создаем курьера
+        CourierTestSteps.createNewCourier(courier);
+        // без пароля логинимся за этого пользователя
+        CourierForSignIn courierForSignIn = new CourierForSignIn(this.courier.getLogin(), "incorrect_password");
+        Response logInResponse = CourierTestSteps.loginCourier(courierForSignIn);
+        // проверяем, что залогинился неуспешно
+        CourierTestSteps.compareErrorResponseStringAndCode(logInResponse, 404, "Учетная запись не найдена");
+        CourierForSignIn courierForSignIn2 = new CourierForSignIn(this.courier.getLogin(), this.courier.getPassword());
+        Response logInResponse2 = CourierTestSteps.loginCourier(courierForSignIn2);
+        // получаем id курьера
+        String courierId = CourierTestSteps.getCourierId(logInResponse2);
+        // удаляем курьера по id
+        Response deleteResponse = CourierTestSteps.deleteCourier(courierId);
+        CourierTestSteps.compareSuccessResponseStringAndCode(deleteResponse, "ok", 200);
     }
 
     @Test
     @DisplayName("Log in with incorrect password")
-    public void logInWithIncorrectPassword() {
-        Response response = given()
-                .spec(SetUp.requestSpec())
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"okhomiakova_\",\"password\": \"54321\"}")
-                .post("/api/v1/courier/login");
-        response.then().assertThat().body("message", equalTo("Учетная запись не найдена")).and().statusCode(404);
+    public void logInWithIncorrectLogin() {
+        // создаем курьера
+        CourierTestSteps.createNewCourier(courier);
+        // без пароля логинимся за этого пользователя
+        CourierForSignIn courierForSignIn = new CourierForSignIn("incorrect_login", this.courier.getPassword());
+        Response logInResponse = CourierTestSteps.loginCourier(courierForSignIn);
+        // проверяем, что залогинился неуспешно
+        CourierTestSteps.compareErrorResponseStringAndCode(logInResponse, 404, "Учетная запись не найдена");
+        CourierForSignIn courierForSignIn2 = new CourierForSignIn(this.courier.getLogin(), this.courier.getPassword());
+        Response logInResponse2 = CourierTestSteps.loginCourier(courierForSignIn2);
+        // получаем id курьера
+        String courierId = CourierTestSteps.getCourierId(logInResponse2);
+        // удаляем курьера по id
+        Response deleteResponse = CourierTestSteps.deleteCourier(courierId);
+        CourierTestSteps.compareSuccessResponseStringAndCode(deleteResponse, "ok", 200);
     }
 
     @Test
-    @DisplayName("Log in with non-existent user")
+    @DisplayName("Логин за несуществующего курьера (неправильный логин и пароль)")
     public void logInWithNonExistentUser() {
-        Response response = given()
-                .spec(SetUp.requestSpec())
-                .header("Content-type", "application/json")
-                .body("{\"login\": \"notokhomiakova_\",\"password\": \"54321\"}")
-                .post("/api/v1/courier/login");
-        response.then().assertThat().body("message", equalTo("Учетная запись не найдена")).and().statusCode(404);
+        CourierForSignIn courierForSignIn = new CourierForSignIn("incorrect_login", "incorrect_password");
+        Response logInResponse = CourierTestSteps.loginCourier(courierForSignIn);
+        // проверяем, что залогинился неуспешно
+        CourierTestSteps.compareErrorResponseStringAndCode(logInResponse, 404, "Учетная запись не найдена");
     }
+//
 }
