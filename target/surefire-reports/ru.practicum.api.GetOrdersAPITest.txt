@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: ru.practicum.api.GetOrdersAPITest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.338 s - in ru.practicum.api.GetOrdersAPITest

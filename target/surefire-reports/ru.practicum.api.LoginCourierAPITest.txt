@@ -1,0 +1,14 @@
+-------------------------------------------------------------------------------
+Test set: ru.practicum.api.LoginCourierAPITest
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 63.577 s <<< FAILURE! - in ru.practicum.api.LoginCourierAPITest
+logInWithoutPassword(ru.practicum.api.LoginCourierAPITest)  Time elapsed: 60.326 s  <<< ERROR!
+java.lang.IllegalStateException: 
+Expected response body to be verified as JSON, HTML or XML but no content-type was defined in the response.
+Try registering a default parser using:
+   RestAssured.defaultParser(<parser type>);
+Content was:
+Service unavailable
+
+	at ru.practicum.api.LoginCourierAPITest.logInWithoutPassword(LoginCourierAPITest.java:109)
+
